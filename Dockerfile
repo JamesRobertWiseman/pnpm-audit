@@ -5,7 +5,7 @@ COPY dist /opt/action-files/dist
 COPY package* /opt/action-files/dist/
 
 RUN cd /opt/action-files/dist && \
-    npm i -only=prod
+    npm i -omit=dev
 
 COPY entrypoint.sh /opt/action-files/entrypoint.sh
 RUN chmod +x entrypoint.sh
