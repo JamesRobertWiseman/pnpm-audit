@@ -1,0 +1,33 @@
+name: 'PNPM Audit'
+branding:
+  icon: 'shield'
+  color: 'orange'
+description: 'Run PNPM audit on your project and outputs the results as a comment on the PR'
+inputs:
+  package_json_path:
+    description: 'Folder within which the package.json lives (relative to project root)'
+    required: true
+    default: './'
+  github_token: 
+    description: 'GitHub access token'
+    required: true
+    default: ${{ github.token }}
+  level:
+    description: | 
+      Minimum level of vulnerability to report
+      - low
+      - moderate
+      - high
+      - critical
+      Default: critical
+    required: false
+    default: 'critical'
+
+
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.package_json_path }}
+    - ${{ inputs.level}}
