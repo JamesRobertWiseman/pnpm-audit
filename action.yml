@@ -22,12 +22,11 @@ inputs:
       Default: critical
     required: false
     default: 'critical'
-
-
+  fails: 
+    description: 'Fail the build if vulnerabilities are found'
+    required: false
+    default: false
 
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
-  args:
-    - ${{ inputs.package_json_path }}
-    - ${{ inputs.level}}
+  using: node20
+  main: dist/main.js

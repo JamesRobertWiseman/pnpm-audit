@@ -8,10 +8,11 @@ To use this action, add the following step to your workflow file:
 
 ```yml
     - name: NPM Audit & Comment
-    uses: jamesrobertwiseman/pnpm-audit@v1
+    uses: JamesRobertWiseman/pnpm-audit@v1.0.4
     with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         level: critical
+        fails: true
 ```
 
 ## Input
@@ -40,4 +41,9 @@ The highest level to report on. Valid options are:
 - `critical`: Report on vulnerabilities with a critical severity level.
 
 Default: `critical`
+
+### `fails`
+Should the action fail the build when vulnerabilities are found
+
+Default: `false`
 

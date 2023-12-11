@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const child_process_1 = require("child_process");
 const core_1 = require("@actions/core");
 const github_1 = require("@actions/github");
 const createComment = (repoContext, prNumber, message, token) => __awaiter(void 0, void 0, void 0, function* () {
@@ -23,22 +24,20 @@ const createComment = (repoContext, prNumber, message, token) => __awaiter(void 
     }
 });
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
-    const stdin = process.openStdin();
-    let auditJson = "";
-    stdin.on("data", (chunk) => {
-        auditJson += chunk;
-    });
-    stdin.on("end", () => {
-        void (() => __awaiter(void 0, void 0, void 0, function* () {
-            const message = auditJson;
-            const token = (0, core_1.getInput)("github_token");
-            if (github_1.context.payload.pull_request == null) {
-                (0, core_1.setFailed)("No pull request found.");
-                return;
-            }
-            const prNumber = github_1.context.payload.pull_request.number;
-            yield createComment(github_1.context.repo, prNumber, message, token);
-        }))();
-    });
+    const token = (0, core_1.getInput)("github_token");
+    const level = (0, core_1.getInput)("level");
+    const input = `pnpm audit --audit-level=${level !== "" ? level : "critical"}`;
+    if (github_1.context.payload.pull_request == null) {
+        (0, core_1.setFailed)("No pull request found.");
+        return;
+    }
+    try {
+        (0, child_process_1.execSync)(input);
+    }
+    catch (out) {
+        const json = out.stdout.toString("utf-8");
+        const prNumber = github_1.context.payload.pull_request.number;
+        yield createComment(github_1.context.repo, prNumber, json, token);
+    }
 });
 void main();
