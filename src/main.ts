@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 
-import { getInput, setFailed } from "@actions/core";
+import { getBooleanInput, getInput, setFailed } from "@actions/core";
 import { context, getOctokit } from "@actions/github";
 
 const createComment = async (
@@ -31,7 +31,7 @@ const main = async (): Promise<void> => {
   const token = getInput("github_token");
   const level = getInput("level");
   const input = `pnpm audit --audit-level=${level !== "" ? level : "critical"}`;
-  const fails = getInput("fails");
+  const fails = getBooleanInput("fails");
   if (context.payload.pull_request == null) {
     setFailed("No pull request found.");
     return;
