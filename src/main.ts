@@ -9,7 +9,8 @@ const createComment = async (
 ): Promise<void> => {
   try {
     const octokit = getOctokit(token);
-
+    console.log("Creating comment...");
+    console.log(message);
     await octokit.rest.issues.createComment({
       ...repoContext,
       issue_number: prNumber,
@@ -28,6 +29,8 @@ const main = async (): Promise<void> => {
   let auditJson = "";
 
   stdin.on("data", (chunk: string): void => {
+    console.log("Received data");
+    console.log(chunk);
     auditJson += chunk;
   });
 
