@@ -51,7 +51,7 @@ export const generateMarkdownTable = (json: any): string => {
         )} | ${severity.padEnd(maxLengths[2])} | ${url.padEnd(maxLengths[3])} |`
     )
     .join("\n");
-  const headline = `## Security Vulnerabilities Found \n\n`;
+  const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
   const summary = `The following security vulnerabilities were found in your dependencies:\n\n`;
   const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
   return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}`;
