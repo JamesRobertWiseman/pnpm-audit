@@ -13,6 +13,13 @@ export const extractAdvisoryData = (json: any): any[] => {
   return tableData;
 };
 
+interface SeverityLevels {
+  low: number;
+  moderate: number;
+  high: number;
+  critical: number;
+}
+
 export const generateMarkdownTable = (
   json: any,
   level: string,
@@ -20,14 +27,6 @@ export const generateMarkdownTable = (
 ): string | undefined => {
   const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
   const data = extractAdvisoryData(json);
-  // Add a mapping of severity levels to numbers
-  // Filter out vulnerabilities with a lower severity level than the one specified
-  interface SeverityLevels {
-    low: number;
-    moderate: number;
-    high: number;
-    critical: number;
-  }
 
   const severityLevels: SeverityLevels = {
     low: 1,
@@ -41,6 +40,7 @@ export const generateMarkdownTable = (
       severityLevels[severity as keyof SeverityLevels] >=
       severityLevels[level as keyof SeverityLevels]
   );
+
   const vulnCount = filteredData.length;
 
   const maxLengths = filteredData.reduce(
@@ -78,6 +78,7 @@ export const generateMarkdownTable = (
         )} | ${severity.padEnd(maxLengths[2])} | ${url.padEnd(maxLengths[3])} |`
     )
     .join("\n");
+
   const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
   const summary = `The following security vulnerabilities with a warning level of ${level} or above were found in your dependencies:\n\n`;
   const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
