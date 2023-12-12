@@ -29002,8 +29002,11 @@ const generateMarkdownTable = (json) => {
     const separatorRow = `| ${"-".repeat(maxLengths[0])} | ${"-".repeat(maxLengths[1])} | ${"-".repeat(maxLengths[2])} | ${"-".repeat(maxLengths[3])} |\n`;
     const contentRows = data
         .map(([moduleName, version, severity, url]) => `| ${moduleName.padEnd(maxLengths[0])} | ${version.padEnd(maxLengths[1])} | ${severity.padEnd(maxLengths[2])} | ${url.padEnd(maxLengths[3])} |`)
-        .join("\n");
-    return `${headerRow}${separatorRow}${contentRows}`;
+        .join("\n\n");
+    const headline = `## Security Vulnerabilities Found, \n\n`;
+    const summary = `The following security vulnerabilities were found in your dependencies:\n\n`;
+    const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
+    return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}`;
 };
 exports.generateMarkdownTable = generateMarkdownTable;
 
