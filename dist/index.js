@@ -28953,7 +28953,7 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (out) {
         const json = JSON.parse(out.stdout.toString("utf-8"));
-        const markdown = (0, utils_1.generateMarkdownTable)(json);
+        const markdown = (0, utils_1.generateMarkdownTable)(json, level, input);
         const prNumber = github_1.context.payload.pull_request.number;
         yield createComment(github_1.context.repo, prNumber, markdown, token, fails);
     }
@@ -28984,7 +28984,7 @@ const extractAdvisoryData = (json) => {
     return tableData;
 };
 exports.extractAdvisoryData = extractAdvisoryData;
-const generateMarkdownTable = (json) => {
+const generateMarkdownTable = (json, level, input) => {
     const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
     const data = (0, exports.extractAdvisoryData)(json);
     const maxLengths = data.reduce((acc, [moduleName, version, severity, url]) => [
@@ -29004,9 +29004,10 @@ const generateMarkdownTable = (json) => {
         .map(([moduleName, version, severity, url]) => `| ${moduleName.padEnd(maxLengths[0])} | ${version.padEnd(maxLengths[1])} | ${severity.padEnd(maxLengths[2])} | ${url.padEnd(maxLengths[3])} |`)
         .join("\n");
     const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
-    const summary = `The following security vulnerabilities were found in your dependencies:\n\n`;
+    const summary = `The following security vulnerabilities with a ${level} or above were found in your dependencies:\n\n`;
     const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
-    return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}`;
+    const inputText = `The following command was used to generate this table:\n\n\`\`\`\n${input}\n\`\`\``;
+    return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}${inputText}`;
 };
 exports.generateMarkdownTable = generateMarkdownTable;
 
