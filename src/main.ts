@@ -32,9 +32,9 @@ const createComment = async (
 const main = async (): Promise<void> => {
   const token = getInput("github_token");
   const level = getInput("level");
-  const input = `pnpm audit --audit-level=${
+  const input = `pnpm audit --audit-level="${
     level !== "" ? level : "critical"
-  } --json`;
+  }" --json`;
   const fails = getBooleanInput("fails");
   if (context.payload.pull_request == null) {
     setFailed("No pull request found.");
@@ -44,9 +44,11 @@ const main = async (): Promise<void> => {
     execSync(input);
   } catch (out: any) {
     const json = JSON.parse(out.stdout.toString("utf-8") as string);
-    const markdown = generateMarkdownTable(json);
+    const markdown = generateMarkdownTable(json, level);
     const prNumber = context.payload.pull_request.number;
-    await createComment(context.repo, prNumber, markdown, token, fails);
+    if (markdown !== undefined) {
+      await createComment(context.repo, prNumber, markdown, token, fails);
+    }
   }
 };
 

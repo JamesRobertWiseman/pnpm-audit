@@ -35,9 +35,9 @@ Default: `github.token`
 
 **Required** 
 The highest level to report on. Valid options are:
-- `low`: Report on vulnerabilities with a low severity level.
-- `moderate`: Report on vulnerabilities with a moderate severity level.
-- `high`: Report on vulnerabilities with a high severity level.
+- `low`: Report on vulnerabilities with a low severity level or higher.
+- `moderate`: Report on vulnerabilities with a moderate severity level or higher.
+- `high`: Report on vulnerabilities with a high severity level or higher.
 - `critical`: Report on vulnerabilities with a critical severity level.
 
 Default: `critical`
