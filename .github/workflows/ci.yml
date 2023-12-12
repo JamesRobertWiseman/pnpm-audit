@@ -26,6 +26,8 @@ jobs:
         with:
           version: 8
 
+      - name: Install vulnerability package
+        run: pnpm add lodash@4.17.17
       - name: Test Local Action - Low
         id: test-action-low
         uses: ./
@@ -34,6 +36,8 @@ jobs:
           level: low
           fails: false
 
+      - name: Install vulnerability package
+        run: pnpm add openssl
       - name: Test Local Action - Critical
         id: test-action-critical
         uses: ./
