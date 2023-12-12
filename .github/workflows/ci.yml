@@ -29,7 +29,10 @@ jobs:
           cache: "pnpm"
 
       - name: Install vulnerability package
-        run: pnpm add openssl lodash@4.17.17 vite google-translate-api-browser@4.1.3
+        run: pnpm add openssl lodash@4.17.17 vite@5.0.4 google-translate-api-browser@4.1.2
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Test Local Action - Low
         id: test-action-low
@@ -38,11 +41,11 @@ jobs:
           level: low
           fails: false
 
-      - name: Test Local Action - Critical
+      - name: Test Local Action - Moderate
         id: test-action-medium
         uses: ./
         with:
-          level: critical
+          level: moderate
           fails: false
 
       - name: Test Local Action - High
