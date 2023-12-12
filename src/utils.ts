@@ -22,8 +22,7 @@ interface SeverityLevels {
 
 export const generateMarkdownTable = (
   json: any,
-  level: string,
-  input: string
+  level: string
 ): string | undefined => {
   const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
   const data = extractAdvisoryData(json);
@@ -82,9 +81,9 @@ export const generateMarkdownTable = (
   const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
   const summary = `The following security vulnerabilities with a warning level of ${level} or above were found in your dependencies:\n\n`;
   const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
-  const inputText = `The following command was used to generate this table:\n\n\`\`\`\n${input}\n\`\`\``;
+
   if (vulnCount === 0) {
     return;
   }
-  return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}${inputText}`;
+  return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}`;
 };

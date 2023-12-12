@@ -28953,7 +28953,7 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (out) {
         const json = JSON.parse(out.stdout.toString("utf-8"));
-        const markdown = (0, utils_1.generateMarkdownTable)(json, level, input);
+        const markdown = (0, utils_1.generateMarkdownTable)(json, level);
         const prNumber = github_1.context.payload.pull_request.number;
         if (markdown !== undefined) {
             yield createComment(github_1.context.repo, prNumber, markdown, token, fails);
@@ -28986,7 +28986,7 @@ const extractAdvisoryData = (json) => {
     return tableData;
 };
 exports.extractAdvisoryData = extractAdvisoryData;
-const generateMarkdownTable = (json, level, input) => {
+const generateMarkdownTable = (json, level) => {
     const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
     const data = (0, exports.extractAdvisoryData)(json);
     const severityLevels = {
@@ -29017,11 +29017,10 @@ const generateMarkdownTable = (json, level, input) => {
     const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
     const summary = `The following security vulnerabilities with a warning level of ${level} or above were found in your dependencies:\n\n`;
     const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
-    const inputText = `The following command was used to generate this table:\n\n\`\`\`\n${input}\n\`\`\``;
     if (vulnCount === 0) {
         return;
     }
-    return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}${inputText}`;
+    return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}`;
 };
 exports.generateMarkdownTable = generateMarkdownTable;
 
