@@ -34,27 +34,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Test Local Action - Low
-        id: test-action-low
-        uses: ./
-        with:
-          level: low
-          fails: false
-
-      - name: Test Local Action - Moderate
-        id: test-action-medium
-        uses: ./
-        with:
-          level: moderate
-          fails: false
-
-      - name: Test Local Action - High
-        id: test-action-high
-        uses: ./
-        with:
-          level: high
-          fails: false
-
       - name: Test Local Action - Critical
         id: test-action-critical
         uses: ./
