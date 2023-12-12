@@ -29004,7 +29004,7 @@ const generateMarkdownTable = (json, level, input) => {
         .map(([moduleName, version, severity, url]) => `| ${moduleName.padEnd(maxLengths[0])} | ${version.padEnd(maxLengths[1])} | ${severity.padEnd(maxLengths[2])} | ${url.padEnd(maxLengths[3])} |`)
         .join("\n");
     const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
-    const summary = `The following security vulnerabilities with a ${level} or above were found in your dependencies:\n\n`;
+    const summary = `The following security vulnerabilities with a warning level of ${level} or above were found in your dependencies:\n\n`;
     const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
     const inputText = `The following command was used to generate this table:\n\n\`\`\`\n${input}\n\`\`\``;
     return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}${inputText}`;
