@@ -4,7 +4,7 @@
   "description": "This action runs pnpm audit and reports the results as a comment on a PR.",
   "main": "dist/index.js",
   "scripts": {
-    "start": "node dist/main.js",
+    "start": "node dist/index.js",
     "build": "ncc build src/main.ts",
     "lint": "eslint ."
   },

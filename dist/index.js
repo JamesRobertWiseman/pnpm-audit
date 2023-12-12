@@ -28924,6 +28924,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const child_process_1 = __nccwpck_require__(2081);
 const core_1 = __nccwpck_require__(9093);
 const github_1 = __nccwpck_require__(5942);
+const utils_1 = __nccwpck_require__(442);
 const createComment = (repoContext, prNumber, message, token, fails) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const octokit = (0, github_1.getOctokit)(token);
@@ -28941,7 +28942,7 @@ const createComment = (repoContext, prNumber, message, token, fails) => __awaite
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     const token = (0, core_1.getInput)("github_token");
     const level = (0, core_1.getInput)("level");
-    const input = `pnpm audit --audit-level=${level !== "" ? level : "critical"}`;
+    const input = `pnpm audit --audit-level=${level !== "" ? level : "critical"} --json`;
     const fails = (0, core_1.getBooleanInput)("fails");
     if (github_1.context.payload.pull_request == null) {
         (0, core_1.setFailed)("No pull request found.");
@@ -28951,12 +28952,60 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
         (0, child_process_1.execSync)(input);
     }
     catch (out) {
-        const json = out.stdout.toString("utf-8");
+        const json = JSON.parse(out.stdout.toString("utf-8"));
+        console.log((0, utils_1.generateMarkdownTable)(json));
         const prNumber = github_1.context.payload.pull_request.number;
         yield createComment(github_1.context.repo, prNumber, json, token, fails);
     }
 });
 void main();
+
+
+/***/ }),
+
+/***/ 442:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.generateMarkdownTable = exports.extractAdvisoryData = void 0;
+const extractAdvisoryData = (json) => {
+    const advisories = json.advisories;
+    const tableData = [];
+    for (const advisoryId in advisories) {
+        const advisory = advisories[advisoryId];
+        const moduleName = advisory.module_name;
+        const version = advisory.findings[0].version;
+        const severity = advisory.severity;
+        const url = advisory.url;
+        tableData.push([moduleName, version, severity, url]);
+    }
+    return tableData;
+};
+exports.extractAdvisoryData = extractAdvisoryData;
+const generateMarkdownTable = (json) => {
+    const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
+    const data = (0, exports.extractAdvisoryData)(json);
+    const maxLengths = data.reduce((acc, [moduleName, version, severity, url]) => [
+        Math.max(acc[0], moduleName.length),
+        Math.max(acc[1], version.length),
+        Math.max(acc[2], severity.length),
+        Math.max(acc[3], url.length),
+    ], [
+        tableHeaders[0].length,
+        tableHeaders[1].length,
+        tableHeaders[2].length,
+        tableHeaders[3].length,
+    ]);
+    const headerRow = `| ${tableHeaders[0].padEnd(maxLengths[0])} | ${tableHeaders[1].padEnd(maxLengths[1])} | ${tableHeaders[2].padEnd(maxLengths[2])} | ${tableHeaders[3].padEnd(maxLengths[3])} |\n`;
+    const separatorRow = `| ${"-".repeat(maxLengths[0])} | ${"-".repeat(maxLengths[1])} | ${"-".repeat(maxLengths[2])} | ${"-".repeat(maxLengths[3])} |\n`;
+    const contentRows = data
+        .map(([moduleName, version, severity, url]) => `| ${moduleName.padEnd(maxLengths[0])} | ${version.padEnd(maxLengths[1])} | ${severity.padEnd(maxLengths[2])} | ${url.padEnd(maxLengths[3])} |`)
+        .join("\n");
+    return `${headerRow}${separatorRow}${contentRows}`;
+};
+exports.generateMarkdownTable = generateMarkdownTable;
 
 
 /***/ }),
