@@ -8,7 +8,7 @@ To use this action, add the following step to your workflow file:
 
 ```yml
     - name: NPM Audit & Comment
-    uses: JamesRobertWiseman/pnpm-audit@v1.0.5
+    uses: JamesRobertWiseman/pnpm-audit@v1.0.6
     with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         level: critical
