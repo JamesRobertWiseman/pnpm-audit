@@ -44,9 +44,9 @@ const main = async (): Promise<void> => {
     execSync(input);
   } catch (out: any) {
     const json = JSON.parse(out.stdout.toString("utf-8") as string);
-    console.log(generateMarkdownTable(json));
+    const markdown = generateMarkdownTable(json);
     const prNumber = context.payload.pull_request.number;
-    await createComment(context.repo, prNumber, json as string, token, fails);
+    await createComment(context.repo, prNumber, markdown, token, fails);
   }
 };
 
