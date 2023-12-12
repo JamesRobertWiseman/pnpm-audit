@@ -33,7 +33,7 @@ jobs:
         id: test-action-low
         uses: ./
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           level: low
           fails: false
 
@@ -44,6 +44,6 @@ jobs:
         id: test-action-critical
         uses: ./
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           level: critical
           fails: false
