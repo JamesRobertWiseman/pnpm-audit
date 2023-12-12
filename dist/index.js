@@ -28942,7 +28942,7 @@ const createComment = (repoContext, prNumber, message, token, fails) => __awaite
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     const token = (0, core_1.getInput)("github_token");
     const level = (0, core_1.getInput)("level");
-    const input = `pnpm audit --audit-level=${level !== "" ? level : "critical"} --json`;
+    const input = `pnpm audit --audit-level="${level !== "" ? level : "critical"}" --json`;
     const fails = (0, core_1.getBooleanInput)("fails");
     if (github_1.context.payload.pull_request == null) {
         (0, core_1.setFailed)("No pull request found.");
