@@ -62,3 +62,11 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           level: critical
           fails: false
+
+      - name: Test Local Action - Critical - Fails
+        id: test-action-critical-fails
+        uses: ./
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          level: critical
+          fails: true
