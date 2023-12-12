@@ -28953,9 +28953,9 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
     }
     catch (out) {
         const json = JSON.parse(out.stdout.toString("utf-8"));
-        console.log((0, utils_1.generateMarkdownTable)(json));
+        const markdown = (0, utils_1.generateMarkdownTable)(json);
         const prNumber = github_1.context.payload.pull_request.number;
-        yield createComment(github_1.context.repo, prNumber, json, token, fails);
+        yield createComment(github_1.context.repo, prNumber, markdown, token, fails);
     }
 });
 void main();
