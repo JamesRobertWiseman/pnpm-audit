@@ -5,6 +5,14 @@ import { context, getOctokit } from "@actions/github";
 
 import { generateMarkdownTable } from "./utils";
 
+/**
+ * Creates a comment on a pull request.
+ * @param repoContext - The repository context containing owner and repo.
+ * @param prNumber - The pull request number.
+ * @param message - The message to be posted as a comment.
+ * @param token - The GitHub token for authentication.
+ * @param fails - Boolean indicating if the action should fail.
+ */
 const createComment = async (
   repoContext: { owner: string; repo: string },
   prNumber: number,
@@ -12,6 +20,14 @@ const createComment = async (
   token: string,
   fails: boolean
 ): Promise<void> => {
+  console.log("createComment function called with inputs:", {
+    repoContext,
+    prNumber,
+    message,
+    token,
+    fails,
+  });
+
   try {
     const octokit = getOctokit(token);
     await octokit.rest.issues.createComment({
@@ -19,16 +35,21 @@ const createComment = async (
       issue_number: prNumber,
       body: message,
     });
+    console.log("Comment created successfully.");
     if (fails) {
       setFailed("Failed because of vulnerabilities.");
     }
   } catch (error) {
+    console.error("Error creating comment:", error);
     if (error instanceof Error) {
       setFailed(error.message);
     }
   }
 };
 
+/**
+ * Main function to run the GitHub Action.
+ */
 const main = async (): Promise<void> => {
   const token = getInput("github_token");
   const level = getInput("level");

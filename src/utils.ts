@@ -1,6 +1,28 @@
-export const extractAdvisoryData = (json: any): any[] => {
+/**
+ * Interface representing the structure of an advisory.
+ */
+interface Advisory {
+  module_name: string;
+  findings: { version: string }[];
+  severity: string;
+  url: string;
+}
+
+/**
+ * Interface representing the JSON data structure.
+ */
+interface AdvisoryData {
+  advisories: { [key: string]: Advisory };
+}
+
+/**
+ * Extracts advisory data from the given JSON object.
+ * @param json - The JSON object containing advisory data.
+ * @returns An array of advisory data.
+ */
+export const extractAdvisoryData = (json: AdvisoryData): [string, string, string, string][] => {
   const advisories = json.advisories;
-  const tableData = [];
+  const tableData: [string, string, string, string][] = [];
   for (const advisoryId in advisories) {
     const advisory = advisories[advisoryId];
     const moduleName = advisory.module_name;
@@ -13,6 +35,9 @@ export const extractAdvisoryData = (json: any): any[] => {
   return tableData;
 };
 
+/**
+ * Interface representing the severity levels.
+ */
 interface SeverityLevels {
   low: number;
   moderate: number;
@@ -20,8 +45,14 @@ interface SeverityLevels {
   critical: number;
 }
 
+/**
+ * Generates a markdown table from the given JSON object.
+ * @param json - The JSON object containing advisory data.
+ * @param level - The severity level to filter the data.
+ * @returns A markdown table as a string or undefined if no vulnerabilities are found.
+ */
 export const generateMarkdownTable = (
-  json: any,
+  json: AdvisoryData,
   level: string
 ): string | undefined => {
   const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
@@ -35,7 +66,7 @@ export const generateMarkdownTable = (
   };
 
   const filteredData = data.filter(
-    ([_, __, severity]: [any, any, string]) =>
+    ([, , severity]) =>
       severityLevels[severity as keyof SeverityLevels] >=
       severityLevels[level as keyof SeverityLevels]
   );
@@ -44,10 +75,10 @@ export const generateMarkdownTable = (
 
   const maxLengths = filteredData.reduce(
     (acc, [moduleName, version, severity, url]) => [
-      Math.max(acc[0] as number, moduleName.length as number),
-      Math.max(acc[1] as number, version.length as number),
-      Math.max(acc[2] as number, severity.length as number),
-      Math.max(acc[3] as number, url.length as number),
+      Math.max(acc[0], moduleName.length),
+      Math.max(acc[1], version.length),
+      Math.max(acc[2], severity.length),
+      Math.max(acc[3], url.length),
     ],
     [
       tableHeaders[0].length,
@@ -58,17 +89,15 @@ export const generateMarkdownTable = (
   );
 
   const headerRow = `| ${tableHeaders[0].padEnd(
-    maxLengths[0] as number
+    maxLengths[0]
   )} | ${tableHeaders[1].padEnd(
-    maxLengths[1] as number
+    maxLengths[1]
   )} | ${tableHeaders[2].padEnd(
-    maxLengths[2] as number
-  )} | ${tableHeaders[3].padEnd(maxLengths[3] as number)} |\n`;
-  const separatorRow = `| ${"-".repeat(maxLengths[0] as number)} | ${"-".repeat(
-    maxLengths[1] as number
-  )} | ${"-".repeat(maxLengths[2] as number)} | ${"-".repeat(
-    maxLengths[3] as number
-  )} |\n`;
+    maxLengths[2]
+  )} | ${tableHeaders[3].padEnd(maxLengths[3])} |\n`;
+  const separatorRow = `| ${"-".repeat(maxLengths[0])} | ${"-".repeat(
+    maxLengths[1]
+  )} | ${"-".repeat(maxLengths[2])} | ${"-".repeat(maxLengths[3])} |\n`;
   const contentRows = filteredData
     .map(
       ([moduleName, version, severity, url]) =>

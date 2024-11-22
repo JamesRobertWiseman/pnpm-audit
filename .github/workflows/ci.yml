@@ -28,11 +28,25 @@ jobs:
           node-version: 20
           cache: "pnpm"
 
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node_modules-
+
       - name: Install vulnerability package
         run: pnpm add openssl lodash@4.17.17 vite@5.0.4 google-translate-api-browser@4.1.2
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Run ESLint
+        run: pnpm run lint
+
+      - name: Run tests
+        run: pnpm test
 
       - name: Test Local Action - Low
         id: test-action-low
