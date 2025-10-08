@@ -29980,9 +29980,10 @@ const removeExistingComment = (octokit, repoContext, prNumber) => __awaiter(void
     }
 });
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     const token = (0, core_1.getInput)("github_token");
     const level = (0, core_1.getInput)("level");
+    const packageJsonPath = (0, core_1.getInput)("package_json_path");
     const singleComment = (0, core_1.getBooleanInput)("single_comment");
     const input = `pnpm audit --audit-level="${level !== "" ? level : "critical"}" --json`;
     const fails = (0, core_1.getBooleanInput)("fails");
@@ -29994,17 +29995,25 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
     const repoContext = github_1.context.repo;
     const octokit = (0, github_1.getOctokit)(token);
     try {
-        (0, child_process_1.execSync)(input);
+        (0, child_process_1.execSync)(input, {
+            cwd: packageJsonPath !== "" ? packageJsonPath : "./",
+        });
         if (singleComment) {
             yield removeExistingComment(octokit, repoContext, prNumber);
         }
     }
     catch (out) {
-        const output = (_a = out === null || out === void 0 ? void 0 : out.stdout) === null || _a === void 0 ? void 0 : _a.toString("utf-8");
-        if (output === undefined) {
-            throw out;
+        const stdout = (_a = out === null || out === void 0 ? void 0 : out.stdout) === null || _a === void 0 ? void 0 : _a.toString("utf-8");
+        if (stdout == null || stdout === "") {
+            if (out instanceof Error) {
+                (0, core_1.setFailed)(out.message);
+            }
+            return;
         }
-        const json = JSON.parse(output);
+        const json = JSON.parse(stdout);
+        if (((_b = json === null || json === void 0 ? void 0 : json.error) === null || _b === void 0 ? void 0 : _b.message) != null) {
+            (0, core_1.setFailed)(json.error.message);
+        }
         const markdown = (0, utils_1.generateMarkdownTable)(json, level);
         if (markdown !== undefined) {
             yield upsertComment(octokit, repoContext, prNumber, markdown, fails, singleComment);
@@ -30025,21 +30034,69 @@ void main();
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateMarkdownTable = exports.extractAdvisoryData = void 0;
+exports.generateMarkdownTable = exports.extractAdvisoryData = exports.parseAuditStdout = void 0;
+const mergeAuditJson = (target, source) => {
+    var _a, _b;
+    return ({
+        advisories: (_a = source.advisories) !== null && _a !== void 0 ? _a : target.advisories,
+        error: (_b = source.error) !== null && _b !== void 0 ? _b : target.error,
+    });
+};
+const parseAuditStdout = (stdout) => {
+    const trimmed = stdout.trim();
+    if (trimmed === "") {
+        return undefined;
+    }
+    const lines = trimmed.split(/\r?\n/).map((line) => line.trim());
+    let parsed;
+    for (const line of lines) {
+        if (line === "") {
+            continue;
+        }
+        try {
+            const json = JSON.parse(line);
+            parsed = parsed == null ? json : mergeAuditJson(parsed, json);
+        }
+        catch (_a) {
+            // Some pnpm versions emit multi-line JSON objects; fall back to parsing the
+            // entire stdout string instead of individual lines if we encounter one.
+            parsed = undefined;
+            break;
+        }
+    }
+    if (parsed != null) {
+        return parsed;
+    }
+    try {
+        return JSON.parse(trimmed);
+    }
+    catch (_b) {
+        return undefined;
+    }
+};
+exports.parseAuditStdout = parseAuditStdout;
 const extractAdvisoryData = (json) => {
-    const advisories = json.advisories;
+    var _a, _b, _c, _d, _e, _f;
+    if ((json === null || json === void 0 ? void 0 : json.advisories) == null) {
+        return [];
+    }
     const tableData = [];
-    for (const advisoryId in advisories) {
-        const advisory = advisories[advisoryId];
-        const moduleName = advisory.module_name;
-        const version = advisory.findings[0].version;
-        const severity = advisory.severity;
-        const url = advisory.url;
+    for (const advisoryId of Object.keys(json.advisories)) {
+        const advisory = json.advisories[advisoryId];
+        const moduleName = (_a = advisory.module_name) !== null && _a !== void 0 ? _a : "unknown";
+        const version = (_d = (_c = (_b = advisory.findings) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.version) !== null && _d !== void 0 ? _d : "unknown";
+        const severity = (_e = advisory.severity) !== null && _e !== void 0 ? _e : "unknown";
+        const url = (_f = advisory.url) !== null && _f !== void 0 ? _f : "";
         tableData.push([moduleName, version, severity, url]);
     }
     return tableData;
 };
 exports.extractAdvisoryData = extractAdvisoryData;
+const getSeverityValue = (severity, severityLevels) => {
+    var _a;
+    const severityKey = severity.toLowerCase();
+    return (_a = severityLevels[severityKey]) !== null && _a !== void 0 ? _a : 0;
+};
 const generateMarkdownTable = (json, level) => {
     const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
     const data = (0, exports.extractAdvisoryData)(json);
@@ -30049,8 +30106,14 @@ const generateMarkdownTable = (json, level) => {
         high: 3,
         critical: 4,
     };
-    const filteredData = data.filter(([_, __, severity]) => severityLevels[severity] >=
-        severityLevels[level]);
+    const normalizedLevel = (level.toLowerCase() in severityLevels
+        ? level.toLowerCase()
+        : "critical");
+    const threshold = severityLevels[normalizedLevel];
+    const filteredData = data.filter(([, __, severity]) => {
+        const severityValue = getSeverityValue(severity, severityLevels);
+        return severityValue >= threshold;
+    });
     const vulnCount = filteredData.length;
     const maxLengths = filteredData.reduce((acc, [moduleName, version, severity, url]) => [
         Math.max(acc[0], moduleName.length),
@@ -30069,7 +30132,7 @@ const generateMarkdownTable = (json, level) => {
         .map(([moduleName, version, severity, url]) => `| ${moduleName.padEnd(maxLengths[0])} | ${version.padEnd(maxLengths[1])} | ${severity.padEnd(maxLengths[2])} | ${url.padEnd(maxLengths[3])} |`)
         .join("\n");
     const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
-    const summary = `The following security vulnerabilities with a warning level of ${level} or above were found in your dependencies:\n\n`;
+    const summary = `The following security vulnerabilities with a warning level of ${normalizedLevel} or above were found in your dependencies:\n\n`;
     if (vulnCount === 0) {
         return;
     }

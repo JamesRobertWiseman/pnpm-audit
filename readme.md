@@ -10,6 +10,7 @@ To use this action, add the following step to your workflow file:
     - name: NPM Audit & Comment
     uses: JamesRobertWiseman/pnpm-audit@v1.0.6
     with:
+        package_json_path: ./
         github_token: ${{ secrets.GITHUB_TOKEN }}
         level: critical
         fails: true

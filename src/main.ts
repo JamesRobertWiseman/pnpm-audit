@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 import { getBooleanInput, getInput, setFailed } from "@actions/core";
 import { context, getOctokit } from "@actions/github";
 
-import { generateMarkdownTable } from "./utils";
+import { generateMarkdownTable, type AuditJson } from "./utils";
 
 const PNPM_AUDIT_COMMENT_IDENTIFIER = "<!-- pnpm-audit-comment -->";
 
@@ -101,10 +101,10 @@ const removeExistingComment = async (
 const main = async (): Promise<void> => {
   const token = getInput("github_token");
   const level = getInput("level");
+  const packageJsonPath = getInput("package_json_path");
   const singleComment = getBooleanInput("single_comment");
-  const input = `pnpm audit --audit-level="${
-    level !== "" ? level : "critical"
-  }" --json`;
+  const input = `pnpm audit --audit-level="${level !== "" ? level : "critical"
+    }" --json`;
   const fails = getBooleanInput("fails");
   if (context.payload.pull_request == null) {
     setFailed("No pull request found.");
@@ -114,17 +114,24 @@ const main = async (): Promise<void> => {
   const repoContext = context.repo;
   const octokit = getOctokit(token);
   try {
-    execSync(input);
+    execSync(input, {
+      cwd: packageJsonPath !== "" ? packageJsonPath : "./",
+    });
     if (singleComment) {
       await removeExistingComment(octokit, repoContext, prNumber);
     }
   } catch (out: any) {
-    const output = out?.stdout?.toString("utf-8");
-    if (output === undefined) {
-      throw out;
+    const stdout = out?.stdout?.toString("utf-8");
+    if (stdout == null || stdout === "") {
+      if (out instanceof Error) {
+        setFailed(out.message);
+      }
+      return;
     }
-
-    const json = JSON.parse(output as string);
+    const json = JSON.parse(stdout as string) as AuditJson;
+    if (json?.error?.message != null) {
+      setFailed(json.error.message);
+    }
     const markdown = generateMarkdownTable(json, level);
     if (markdown !== undefined) {
       await upsertComment(
