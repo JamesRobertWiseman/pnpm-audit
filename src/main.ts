@@ -32,6 +32,7 @@ const createComment = async (
 const main = async (): Promise<void> => {
   const token = getInput("github_token");
   const level = getInput("level");
+  const packageJsonPath = getInput("package_json_path");
   const input = `pnpm audit --audit-level="${
     level !== "" ? level : "critical"
   }" --json`;
@@ -41,7 +42,9 @@ const main = async (): Promise<void> => {
     return;
   }
   try {
-    execSync(input);
+    execSync(input, {
+      cwd: packageJsonPath !== "" ? packageJsonPath : "./",
+    });
   } catch (out: any) {
     const json = JSON.parse(out.stdout.toString("utf-8") as string);
     const markdown = generateMarkdownTable(json, level);
