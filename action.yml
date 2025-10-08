@@ -8,12 +8,12 @@ inputs:
     description: 'Folder within which the package.json lives (relative to project root)'
     required: true
     default: './'
-  github_token: 
+  github_token:
     description: 'GitHub access token'
     required: true
     default: ${{ github.token }}
   level:
-    description: | 
+    description: |
       Minimum level of vulnerability to report
       - low
       - moderate
@@ -28,6 +28,10 @@ inputs:
     default: false
   single_comment:
     description: 'Edit or remove a single comment instead of posting new ones'
+    required: false
+    default: false
+  inline:
+    description: 'Emit vulnerabilities inline in the workflow logs using GitHub annotations'
     required: false
     default: false
 

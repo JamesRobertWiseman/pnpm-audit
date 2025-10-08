@@ -55,3 +55,10 @@ the audit no longer reports issues.
 
 Default: `false`
 
+### `inline`
+Emit audit findings directly in the workflow logs using GitHub annotation
+syntax. When enabled, the action surfaces each vulnerability inline so they are
+visible without opening the pull request comment.
+
+Default: `false`
+
