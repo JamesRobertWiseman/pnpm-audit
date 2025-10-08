@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 import { getBooleanInput, getInput, setFailed } from "@actions/core";
 import { context, getOctokit } from "@actions/github";
 
-import { generateMarkdownTable } from "./utils";
+import { generateMarkdownTable, parseAuditStdout } from "./utils";
 
 const createComment = async (
   repoContext: { owner: string; repo: string },
@@ -46,7 +46,24 @@ const main = async (): Promise<void> => {
       cwd: packageJsonPath !== "" ? packageJsonPath : "./",
     });
   } catch (out: any) {
-    const json = JSON.parse(out.stdout.toString("utf-8") as string);
+    const stdout = out?.stdout?.toString("utf-8");
+    if (stdout == null || stdout === "") {
+      if (out instanceof Error) {
+        setFailed(out.message);
+      }
+      return;
+    }
+
+    const json = parseAuditStdout(stdout);
+    if (json == null) {
+      setFailed("Failed to parse pnpm audit output.");
+      return;
+    }
+
+    if (json.error?.message != null) {
+      setFailed(json.error.message);
+    }
+
     const markdown = generateMarkdownTable(json, level);
     const prNumber = context.payload.pull_request.number;
     if (markdown !== undefined) {
