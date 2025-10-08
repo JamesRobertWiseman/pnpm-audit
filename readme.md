@@ -8,8 +8,8 @@ To use this action, add the following step to your workflow file:
 
 ```yml
     - name: NPM Audit & Comment
-    uses: JamesRobertWiseman/pnpm-audit@v1.0.6
-    with:
+      uses: JamesRobertWiseman/pnpm-audit@v3
+      with:
         package_json_path: ./ # Folder within which the package.json lives (relative to project root).
         github_token: ${{ secrets.GITHUB_TOKEN }} # GitHub access token, needed to make a comment on the PR.
         level: critical # critical, high, moderate, low
@@ -73,7 +73,7 @@ Examples:
 ```yml
 - name: PNPM Audit (only on PRs)
   if: ${{ github.event_name == 'pull_request' }}
-  uses: JamesRobertWiseman/pnpm-audit@v1.0.6
+  uses: JamesRobertWiseman/pnpm-audit@v3
   with:
     package_json_path: ./
     github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -84,7 +84,7 @@ Examples:
 ```yml
 - name: PNPM Audit (only PRs into main)
   if: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main' }}
-  uses: JamesRobertWiseman/pnpm-audit@v1.0.6
+  uses: JamesRobertWiseman/pnpm-audit@v3
   with:
     package_json_path: ./
     github_token: ${{ secrets.GITHUB_TOKEN }}
