@@ -20,7 +20,7 @@ jobs:
 
       - uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 9
 
       - name: Setup Nodejs
         uses: actions/setup-node@v4
@@ -40,6 +40,8 @@ jobs:
         with:
           level: low
           fails: false
+          single_comment: true
+          inline: true
 
       - name: Test Local Action - Moderate
         id: test-action-medium
@@ -47,6 +49,8 @@ jobs:
         with:
           level: moderate
           fails: false
+          single_comment: true
+          inline: true
 
       - name: Test Local Action - High
         id: test-action-high
@@ -54,6 +58,8 @@ jobs:
         with:
           level: high
           fails: false
+          single_comment: true
+          inline: true
 
       - name: Test Local Action - Critical
         id: test-action-critical
@@ -62,3 +68,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           level: critical
           fails: false
+          single_comment: true
+          inline: true
