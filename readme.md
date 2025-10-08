@@ -47,3 +47,10 @@ Should the action fail the build when vulnerabilities are found
 
 Default: `false`
 
+### `single_comment`
+Limit the action to a single PR comment. When enabled, the action updates the
+existing comment if vulnerabilities persist and removes it automatically once
+the audit no longer reports issues.
+
+Default: `false`
+
