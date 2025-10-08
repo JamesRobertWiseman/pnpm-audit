@@ -80,10 +80,9 @@ export const generateMarkdownTable = (
 
   const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
   const summary = `The following security vulnerabilities with a warning level of ${level} or above were found in your dependencies:\n\n`;
-  const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
 
   if (vulnCount === 0) {
     return;
   }
-  return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}`;
+  return `${headline}${summary}${headerRow}${separatorRow}${contentRows}`;
 };
