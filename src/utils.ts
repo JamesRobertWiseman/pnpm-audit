@@ -59,7 +59,30 @@ export const parseAuditStdout = (stdout: string): AuditJson | undefined => {
   }
 };
 
-type TableRow = [string, string, string, string];
+export type TableRow = [string, string, string, string];
+
+interface SeverityLevels {
+  low: number;
+  moderate: number;
+  high: number;
+  critical: number;
+}
+
+type Severity = keyof SeverityLevels;
+
+const severityLevels: SeverityLevels = {
+  low: 1,
+  moderate: 2,
+  high: 3,
+  critical: 4,
+};
+
+const normalizeSeverityLevel = (level: string): Severity => {
+  const normalizedLevel = level.toLowerCase();
+  return (normalizedLevel in severityLevels
+    ? (normalizedLevel as Severity)
+    : "critical") as Severity;
+};
 
 export const extractAdvisoryData = (json: AuditJson): TableRow[] => {
   if (json?.advisories == null) {
@@ -79,21 +102,43 @@ export const extractAdvisoryData = (json: AuditJson): TableRow[] => {
   return tableData;
 };
 
-interface SeverityLevels {
-  low: number;
-  moderate: number;
-  high: number;
-  critical: number;
-}
-
-type Severity = keyof SeverityLevels;
-
-const getSeverityValue = (
-  severity: string,
-  severityLevels: SeverityLevels
-): number => {
+const getSeverityValue = (severity: string): number => {
   const severityKey = severity.toLowerCase() as Severity;
   return severityLevels[severityKey] ?? 0;
+};
+
+export const getVulnerabilitiesForLevel = (
+  json: AuditJson,
+  level: string
+): { rows: TableRow[]; normalizedLevel: Severity } => {
+  const data = extractAdvisoryData(json);
+  const normalizedLevel = normalizeSeverityLevel(level);
+  const threshold = severityLevels[normalizedLevel];
+
+  const rows = data.filter(([, __, severity]) => {
+    const severityValue = getSeverityValue(severity);
+    return severityValue >= threshold;
+  });
+
+  return { rows, normalizedLevel };
+};
+
+export type AnnotationLevel = "error" | "warning" | "notice";
+
+export const getAnnotationLevelForSeverity = (
+  severity: string
+): AnnotationLevel => {
+  const severityValue = getSeverityValue(severity);
+
+  if (severityValue >= severityLevels.high) {
+    return "error";
+  }
+
+  if (severityValue >= severityLevels.moderate) {
+    return "warning";
+  }
+
+  return "notice";
 };
 
 export const generateMarkdownTable = (
@@ -101,26 +146,8 @@ export const generateMarkdownTable = (
   level: string
 ): string | undefined => {
   const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
-  const data = extractAdvisoryData(json);
-
-  const severityLevels: SeverityLevels = {
-    low: 1,
-    moderate: 2,
-    high: 3,
-    critical: 4,
-  };
-
-  const normalizedLevel = (
-    level.toLowerCase() in severityLevels
-      ? (level.toLowerCase() as Severity)
-      : "critical"
-  ) as Severity;
-  const threshold = severityLevels[normalizedLevel];
-
-  const filteredData = data.filter(([, __, severity]) => {
-    const severityValue = getSeverityValue(severity, severityLevels);
-    return severityValue >= threshold;
-  });
+  const { rows: filteredData, normalizedLevel } =
+    getVulnerabilitiesForLevel(json, level);
 
   const vulnCount = filteredData.length;
 

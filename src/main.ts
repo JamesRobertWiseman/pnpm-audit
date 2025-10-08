@@ -1,11 +1,25 @@
 import { execSync } from "child_process";
 
-import { getBooleanInput, getInput, setFailed } from "@actions/core";
+import {
+  error as logError,
+  getBooleanInput,
+  getInput,
+  notice as logNotice,
+  setFailed,
+  warning as logWarning,
+} from "@actions/core";
 import { context, getOctokit } from "@actions/github";
 
-import { generateMarkdownTable, type AuditJson } from "./utils";
+import {
+  generateMarkdownTable,
+  getAnnotationLevelForSeverity,
+  getVulnerabilitiesForLevel,
+  parseAuditStdout,
+  type TableRow,
+} from "./utils";
 
 const PNPM_AUDIT_COMMENT_IDENTIFIER = "<!-- pnpm-audit-comment -->";
+const INLINE_ANNOTATION_TITLE = "pnpm audit vulnerability";
 
 type OctokitInstance = ReturnType<typeof getOctokit>;
 
@@ -98,11 +112,35 @@ const removeExistingComment = async (
   }
 };
 
+const reportInlineVulnerabilities = (vulnerabilities: TableRow[]): void => {
+  for (const [moduleName, version, severity, url] of vulnerabilities) {
+    const messageParts = [
+      `${moduleName}@${version}`,
+      `Severity: ${severity}`,
+    ];
+
+    if (url !== "") {
+      messageParts.push(`Details: ${url}`);
+    }
+
+    const message = messageParts.join(" - ");
+    const annotationLevel = getAnnotationLevelForSeverity(severity);
+    if (annotationLevel === "error") {
+      logError(message, { title: INLINE_ANNOTATION_TITLE });
+    } else if (annotationLevel === "warning") {
+      logWarning(message, { title: INLINE_ANNOTATION_TITLE });
+    } else {
+      logNotice(message, { title: INLINE_ANNOTATION_TITLE });
+    }
+  }
+};
+
 const main = async (): Promise<void> => {
   const token = getInput("github_token");
   const level = getInput("level");
   const packageJsonPath = getInput("package_json_path");
   const singleComment = getBooleanInput("single_comment");
+  const inline = getBooleanInput("inline");
   const input = `pnpm audit --audit-level="${level !== "" ? level : "critical"
     }" --json`;
   const fails = getBooleanInput("fails");
@@ -128,11 +166,19 @@ const main = async (): Promise<void> => {
       }
       return;
     }
-    const json = JSON.parse(stdout as string) as AuditJson;
+    const json = parseAuditStdout(stdout as string);
+    if (json == null) {
+      setFailed("Failed to parse pnpm audit output.");
+      return;
+    }
     if (json?.error?.message != null) {
       setFailed(json.error.message);
     }
+    const { rows: vulnerabilities } = getVulnerabilitiesForLevel(json, level);
     const markdown = generateMarkdownTable(json, level);
+    if (inline && vulnerabilities.length > 0) {
+      reportInlineVulnerabilities(vulnerabilities);
+    }
     if (markdown !== undefined) {
       await upsertComment(
         octokit,

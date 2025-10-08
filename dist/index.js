@@ -29942,6 +29942,7 @@ const core_1 = __nccwpck_require__(6966);
 const github_1 = __nccwpck_require__(4903);
 const utils_1 = __nccwpck_require__(6087);
 const PNPM_AUDIT_COMMENT_IDENTIFIER = "<!-- pnpm-audit-comment -->";
+const INLINE_ANNOTATION_TITLE = "pnpm audit vulnerability";
 const findExistingComment = (octokit, repoContext, prNumber) => __awaiter(void 0, void 0, void 0, function* () {
     const comments = (yield octokit.paginate(octokit.rest.issues.listComments, Object.assign(Object.assign({}, repoContext), { issue_number: prNumber, per_page: 100 })));
     return comments.find((comment) => { var _a; return (_a = comment.body) === null || _a === void 0 ? void 0 : _a.includes(PNPM_AUDIT_COMMENT_IDENTIFIER); });
@@ -29979,12 +29980,35 @@ const removeExistingComment = (octokit, repoContext, prNumber) => __awaiter(void
         yield octokit.rest.issues.deleteComment(Object.assign(Object.assign({}, repoContext), { comment_id: existingComment.id }));
     }
 });
+const reportInlineVulnerabilities = (vulnerabilities) => {
+    for (const [moduleName, version, severity, url] of vulnerabilities) {
+        const messageParts = [
+            `${moduleName}@${version}`,
+            `Severity: ${severity}`,
+        ];
+        if (url !== "") {
+            messageParts.push(`Details: ${url}`);
+        }
+        const message = messageParts.join(" - ");
+        const annotationLevel = (0, utils_1.getAnnotationLevelForSeverity)(severity);
+        if (annotationLevel === "error") {
+            (0, core_1.error)(message, { title: INLINE_ANNOTATION_TITLE });
+        }
+        else if (annotationLevel === "warning") {
+            (0, core_1.warning)(message, { title: INLINE_ANNOTATION_TITLE });
+        }
+        else {
+            (0, core_1.notice)(message, { title: INLINE_ANNOTATION_TITLE });
+        }
+    }
+};
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const token = (0, core_1.getInput)("github_token");
     const level = (0, core_1.getInput)("level");
     const packageJsonPath = (0, core_1.getInput)("package_json_path");
     const singleComment = (0, core_1.getBooleanInput)("single_comment");
+    const inline = (0, core_1.getBooleanInput)("inline");
     const input = `pnpm audit --audit-level="${level !== "" ? level : "critical"}" --json`;
     const fails = (0, core_1.getBooleanInput)("fails");
     if (github_1.context.payload.pull_request == null) {
@@ -30010,11 +30034,19 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
             }
             return;
         }
-        const json = JSON.parse(stdout);
+        const json = (0, utils_1.parseAuditStdout)(stdout);
+        if (json == null) {
+            (0, core_1.setFailed)("Failed to parse pnpm audit output.");
+            return;
+        }
         if (((_b = json === null || json === void 0 ? void 0 : json.error) === null || _b === void 0 ? void 0 : _b.message) != null) {
             (0, core_1.setFailed)(json.error.message);
         }
+        const { rows: vulnerabilities } = (0, utils_1.getVulnerabilitiesForLevel)(json, level);
         const markdown = (0, utils_1.generateMarkdownTable)(json, level);
+        if (inline && vulnerabilities.length > 0) {
+            reportInlineVulnerabilities(vulnerabilities);
+        }
         if (markdown !== undefined) {
             yield upsertComment(octokit, repoContext, prNumber, markdown, fails, singleComment);
         }
@@ -30034,7 +30066,7 @@ void main();
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.generateMarkdownTable = exports.extractAdvisoryData = exports.parseAuditStdout = void 0;
+exports.generateMarkdownTable = exports.getAnnotationLevelForSeverity = exports.getVulnerabilitiesForLevel = exports.extractAdvisoryData = exports.parseAuditStdout = void 0;
 const mergeAuditJson = (target, source) => {
     var _a, _b;
     return ({
@@ -30075,6 +30107,18 @@ const parseAuditStdout = (stdout) => {
     }
 };
 exports.parseAuditStdout = parseAuditStdout;
+const severityLevels = {
+    low: 1,
+    moderate: 2,
+    high: 3,
+    critical: 4,
+};
+const normalizeSeverityLevel = (level) => {
+    const normalizedLevel = level.toLowerCase();
+    return (normalizedLevel in severityLevels
+        ? normalizedLevel
+        : "critical");
+};
 const extractAdvisoryData = (json) => {
     var _a, _b, _c, _d, _e, _f;
     if ((json === null || json === void 0 ? void 0 : json.advisories) == null) {
@@ -30092,28 +30136,36 @@ const extractAdvisoryData = (json) => {
     return tableData;
 };
 exports.extractAdvisoryData = extractAdvisoryData;
-const getSeverityValue = (severity, severityLevels) => {
+const getSeverityValue = (severity) => {
     var _a;
     const severityKey = severity.toLowerCase();
     return (_a = severityLevels[severityKey]) !== null && _a !== void 0 ? _a : 0;
 };
-const generateMarkdownTable = (json, level) => {
-    const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
+const getVulnerabilitiesForLevel = (json, level) => {
     const data = (0, exports.extractAdvisoryData)(json);
-    const severityLevels = {
-        low: 1,
-        moderate: 2,
-        high: 3,
-        critical: 4,
-    };
-    const normalizedLevel = (level.toLowerCase() in severityLevels
-        ? level.toLowerCase()
-        : "critical");
+    const normalizedLevel = normalizeSeverityLevel(level);
     const threshold = severityLevels[normalizedLevel];
-    const filteredData = data.filter(([, __, severity]) => {
-        const severityValue = getSeverityValue(severity, severityLevels);
+    const rows = data.filter(([, __, severity]) => {
+        const severityValue = getSeverityValue(severity);
         return severityValue >= threshold;
     });
+    return { rows, normalizedLevel };
+};
+exports.getVulnerabilitiesForLevel = getVulnerabilitiesForLevel;
+const getAnnotationLevelForSeverity = (severity) => {
+    const severityValue = getSeverityValue(severity);
+    if (severityValue >= severityLevels.high) {
+        return "error";
+    }
+    if (severityValue >= severityLevels.moderate) {
+        return "warning";
+    }
+    return "notice";
+};
+exports.getAnnotationLevelForSeverity = getAnnotationLevelForSeverity;
+const generateMarkdownTable = (json, level) => {
+    const tableHeaders = ["Module Name", "Version", "Severity", "URL"];
+    const { rows: filteredData, normalizedLevel } = (0, exports.getVulnerabilitiesForLevel)(json, level);
     const vulnCount = filteredData.length;
     const maxLengths = filteredData.reduce((acc, [moduleName, version, severity, url]) => [
         Math.max(acc[0], moduleName.length),
