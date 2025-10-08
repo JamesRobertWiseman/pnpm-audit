@@ -22,8 +22,12 @@ inputs:
       Default: critical
     required: false
     default: 'critical'
-  fails: 
+  fails:
     description: 'Fail the build if vulnerabilities are found'
+    required: false
+    default: false
+  single_comment:
+    description: 'Edit or remove a single comment instead of posting new ones'
     required: false
     default: false
 

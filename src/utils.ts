@@ -126,10 +126,10 @@ export const generateMarkdownTable = (
 
   const maxLengths = filteredData.reduce(
     (acc, [moduleName, version, severity, url]) => [
-      Math.max(acc[0] as number, moduleName.length as number),
-      Math.max(acc[1] as number, version.length as number),
-      Math.max(acc[2] as number, severity.length as number),
-      Math.max(acc[3] as number, url.length as number),
+      Math.max(acc[0], moduleName.length),
+      Math.max(acc[1], version.length),
+      Math.max(acc[2], severity.length),
+      Math.max(acc[3], url.length),
     ],
     [
       tableHeaders[0].length,
@@ -140,16 +140,16 @@ export const generateMarkdownTable = (
   );
 
   const headerRow = `| ${tableHeaders[0].padEnd(
-    maxLengths[0] as number
+    maxLengths[0]
   )} | ${tableHeaders[1].padEnd(
-    maxLengths[1] as number
+    maxLengths[1]
   )} | ${tableHeaders[2].padEnd(
-    maxLengths[2] as number
-  )} | ${tableHeaders[3].padEnd(maxLengths[3] as number)} |\n`;
-  const separatorRow = `| ${"-".repeat(maxLengths[0] as number)} | ${"-".repeat(
-    maxLengths[1] as number
-  )} | ${"-".repeat(maxLengths[2] as number)} | ${"-".repeat(
-    maxLengths[3] as number
+    maxLengths[2]
+  )} | ${tableHeaders[3].padEnd(maxLengths[3])} |\n`;
+  const separatorRow = `| ${"-".repeat(maxLengths[0])} | ${"-".repeat(
+    maxLengths[1]
+  )} | ${"-".repeat(maxLengths[2])} | ${"-".repeat(
+    maxLengths[3]
   )} |\n`;
   const contentRows = filteredData
     .map(
@@ -162,10 +162,9 @@ export const generateMarkdownTable = (
 
   const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
   const summary = `The following security vulnerabilities with a warning level of ${normalizedLevel} or above were found in your dependencies:\n\n`;
-  const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
 
   if (vulnCount === 0) {
     return;
   }
-  return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}`;
+  return `${headline}${summary}${headerRow}${separatorRow}${contentRows}`;
 };

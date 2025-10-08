@@ -29941,10 +29941,28 @@ const child_process_1 = __nccwpck_require__(5317);
 const core_1 = __nccwpck_require__(6966);
 const github_1 = __nccwpck_require__(4903);
 const utils_1 = __nccwpck_require__(6087);
-const createComment = (repoContext, prNumber, message, token, fails) => __awaiter(void 0, void 0, void 0, function* () {
+const PNPM_AUDIT_COMMENT_IDENTIFIER = "<!-- pnpm-audit-comment -->";
+const findExistingComment = (octokit, repoContext, prNumber) => __awaiter(void 0, void 0, void 0, function* () {
+    const comments = (yield octokit.paginate(octokit.rest.issues.listComments, Object.assign(Object.assign({}, repoContext), { issue_number: prNumber, per_page: 100 })));
+    return comments.find((comment) => { var _a; return (_a = comment.body) === null || _a === void 0 ? void 0 : _a.includes(PNPM_AUDIT_COMMENT_IDENTIFIER); });
+});
+const upsertComment = (octokit, repoContext, prNumber, message, fails, singleComment) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const octokit = (0, github_1.getOctokit)(token);
-        yield octokit.rest.issues.createComment(Object.assign(Object.assign({}, repoContext), { issue_number: prNumber, body: message }));
+        const body = singleComment
+            ? `${PNPM_AUDIT_COMMENT_IDENTIFIER}\n${message}`
+            : message;
+        if (singleComment) {
+            const existingComment = yield findExistingComment(octokit, repoContext, prNumber);
+            if (existingComment !== undefined) {
+                yield octokit.rest.issues.updateComment(Object.assign(Object.assign({}, repoContext), { comment_id: existingComment.id, body }));
+            }
+            else {
+                yield octokit.rest.issues.createComment(Object.assign(Object.assign({}, repoContext), { issue_number: prNumber, body }));
+            }
+        }
+        else {
+            yield octokit.rest.issues.createComment(Object.assign(Object.assign({}, repoContext), { issue_number: prNumber, body }));
+        }
         if (fails) {
             (0, core_1.setFailed)("Failed because of vulnerabilities.");
         }
@@ -29955,21 +29973,34 @@ const createComment = (repoContext, prNumber, message, token, fails) => __awaite
         }
     }
 });
+const removeExistingComment = (octokit, repoContext, prNumber) => __awaiter(void 0, void 0, void 0, function* () {
+    const existingComment = yield findExistingComment(octokit, repoContext, prNumber);
+    if (existingComment !== undefined) {
+        yield octokit.rest.issues.deleteComment(Object.assign(Object.assign({}, repoContext), { comment_id: existingComment.id }));
+    }
+});
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const token = (0, core_1.getInput)("github_token");
     const level = (0, core_1.getInput)("level");
     const packageJsonPath = (0, core_1.getInput)("package_json_path");
+    const singleComment = (0, core_1.getBooleanInput)("single_comment");
     const input = `pnpm audit --audit-level="${level !== "" ? level : "critical"}" --json`;
     const fails = (0, core_1.getBooleanInput)("fails");
     if (github_1.context.payload.pull_request == null) {
         (0, core_1.setFailed)("No pull request found.");
         return;
     }
+    const prNumber = github_1.context.payload.pull_request.number;
+    const repoContext = github_1.context.repo;
+    const octokit = (0, github_1.getOctokit)(token);
     try {
         (0, child_process_1.execSync)(input, {
             cwd: packageJsonPath !== "" ? packageJsonPath : "./",
         });
+        if (singleComment) {
+            yield removeExistingComment(octokit, repoContext, prNumber);
+        }
     }
     catch (out) {
         const stdout = (_a = out === null || out === void 0 ? void 0 : out.stdout) === null || _a === void 0 ? void 0 : _a.toString("utf-8");
@@ -29979,18 +30010,16 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
             }
             return;
         }
-        const json = (0, utils_1.parseAuditStdout)(stdout);
-        if (json == null) {
-            (0, core_1.setFailed)("Failed to parse pnpm audit output.");
-            return;
-        }
-        if (((_b = json.error) === null || _b === void 0 ? void 0 : _b.message) != null) {
+        const json = JSON.parse(stdout);
+        if (((_b = json === null || json === void 0 ? void 0 : json.error) === null || _b === void 0 ? void 0 : _b.message) != null) {
             (0, core_1.setFailed)(json.error.message);
         }
         const markdown = (0, utils_1.generateMarkdownTable)(json, level);
-        const prNumber = github_1.context.payload.pull_request.number;
         if (markdown !== undefined) {
-            yield createComment(github_1.context.repo, prNumber, markdown, token, fails);
+            yield upsertComment(octokit, repoContext, prNumber, markdown, fails, singleComment);
+        }
+        else if (singleComment) {
+            yield removeExistingComment(octokit, repoContext, prNumber);
         }
     }
 });
@@ -30104,11 +30133,10 @@ const generateMarkdownTable = (json, level) => {
         .join("\n");
     const headline = `## :warning: Security Vulnerabilities Found :warning:\n\n`;
     const summary = `The following security vulnerabilities with a warning level of ${normalizedLevel} or above were found in your dependencies:\n\n`;
-    const footnote = `\n\nPlease run \`npm audit fix\` to fix them.\n\n`;
     if (vulnCount === 0) {
         return;
     }
-    return `${headline}${summary}${headerRow}${separatorRow}${contentRows}${footnote}`;
+    return `${headline}${summary}${headerRow}${separatorRow}${contentRows}`;
 };
 exports.generateMarkdownTable = generateMarkdownTable;
 
