@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 import { getBooleanInput, getInput, setFailed } from "@actions/core";
 import { context, getOctokit } from "@actions/github";
 
-import { generateMarkdownTable } from "./utils";
+import { generateMarkdownTable, parseAuditStdout } from "./utils";
 
 const createComment = async (
   repoContext: { owner: string; repo: string },
@@ -32,6 +32,7 @@ const createComment = async (
 const main = async (): Promise<void> => {
   const token = getInput("github_token");
   const level = getInput("level");
+  const packageJsonPath = getInput("package_json_path");
   const input = `pnpm audit --audit-level="${
     level !== "" ? level : "critical"
   }" --json`;
@@ -41,9 +42,28 @@ const main = async (): Promise<void> => {
     return;
   }
   try {
-    execSync(input);
+    execSync(input, {
+      cwd: packageJsonPath !== "" ? packageJsonPath : "./",
+    });
   } catch (out: any) {
-    const json = JSON.parse(out.stdout.toString("utf-8") as string);
+    const stdout = out?.stdout?.toString("utf-8");
+    if (stdout == null || stdout === "") {
+      if (out instanceof Error) {
+        setFailed(out.message);
+      }
+      return;
+    }
+
+    const json = parseAuditStdout(stdout);
+    if (json == null) {
+      setFailed("Failed to parse pnpm audit output.");
+      return;
+    }
+
+    if (json.error?.message != null) {
+      setFailed(json.error.message);
+    }
+
     const markdown = generateMarkdownTable(json, level);
     const prNumber = context.payload.pull_request.number;
     if (markdown !== undefined) {
