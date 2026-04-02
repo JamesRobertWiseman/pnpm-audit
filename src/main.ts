@@ -141,8 +141,9 @@ const main = async (): Promise<void> => {
   const packageJsonPath = getInput("package_json_path");
   const singleComment = getBooleanInput("single_comment");
   const inline = getBooleanInput("inline");
+  const prod = getBooleanInput("prod");
   const input = `pnpm audit --audit-level="${level !== "" ? level : "critical"
-    }" --json`;
+    }" --json${prod ? " --prod" : ""}`;
   const fails = getBooleanInput("fails");
   if (context.payload.pull_request == null) {
     setFailed("No pull request found.");
