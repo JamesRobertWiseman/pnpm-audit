@@ -1,6 +1,6 @@
 {
   "name": "pnpm-audit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "This action runs pnpm audit and reports the results as a comment on a PR.",
   "main": "dist/index.js",
   "scripts": {
