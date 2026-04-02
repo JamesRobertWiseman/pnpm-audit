@@ -30009,7 +30009,8 @@ const main = () => __awaiter(void 0, void 0, void 0, function* () {
     const packageJsonPath = (0, core_1.getInput)("package_json_path");
     const singleComment = (0, core_1.getBooleanInput)("single_comment");
     const inline = (0, core_1.getBooleanInput)("inline");
-    const input = `pnpm audit --audit-level="${level !== "" ? level : "critical"}" --json`;
+    const prod = (0, core_1.getBooleanInput)("prod");
+    const input = `pnpm audit --audit-level="${level !== "" ? level : "critical"}" --json${prod ? " --prod" : ""}`;
     const fails = (0, core_1.getBooleanInput)("fails");
     if (github_1.context.payload.pull_request == null) {
         (0, core_1.setFailed)("No pull request found.");

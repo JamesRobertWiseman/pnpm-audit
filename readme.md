@@ -16,6 +16,7 @@ To use this action, add the following step to your workflow file:
         fails: true # true to fail the build if vulnerabilities are found
         single_comment: false # true to only post one comment
         inline: false # true to emit audit findings directly in the workflow logs using GitHub annotation syntax
+        prod: false # true to only audit production dependencies (excludes devDependencies)
 ```
 
 ## Inputs
@@ -61,6 +62,12 @@ Default: `false`
 Emit audit findings directly in the workflow logs using GitHub annotation
 syntax. When enabled, the action surfaces each vulnerability inline so they are
 visible without opening the pull request comment.
+
+Default: `false`
+
+### `prod`
+Only audit production dependencies. When enabled, appends `--prod` to the
+`pnpm audit` command, excluding `devDependencies` from the audit results.
 
 Default: `false`
 

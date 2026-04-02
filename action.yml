@@ -34,6 +34,10 @@ inputs:
     description: 'Emit vulnerabilities inline in the workflow logs using GitHub annotations'
     required: false
     default: false
+  prod:
+    description: 'Only audit production dependencies (excludes devDependencies)'
+    required: false
+    default: false
 
 runs:
   using: node20
